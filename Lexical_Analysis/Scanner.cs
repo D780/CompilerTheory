@@ -9,24 +9,62 @@ namespace Lexical_Analysis
     class Scanner
     {
         string scannerSource;
+        /// <summary>
+        /// 当前扫描位置
+        /// </summary>
         int pos = 0;
         public int Pos
         {
             get { return this.pos; }
-            set { this.pos = value; }
+            private set { this.pos = value; }
+        }        
+        /// <summary>
+        /// 上一次扫描的字串的行号
+        /// </summary>
+        int line=1;
+        public int Line
+        {
+            get { return this.line; }
+            private set { this.line = value; }
         }
+        /// <summary>
+        /// 上一次扫描的字串的种别码
+        /// </summary>
+        int syn ;
+        public int Syn
+        {
+            get { return this.syn; }
+            private set { this.syn = value; }
+        }
+        /// <summary>
+        /// 上一次扫描的字串的值
+        /// </summary>
+        string word;
+        public string Word
+        {
+            get { return this.word; }
+            private set { this.word = value; }
+        }
+
         public Scanner(string source)
         {
             scannerSource = source;
         }
-
+        /// <summary>
+        /// 从Pos开始扫描一个字串
+        /// </summary>
+        /// <returns></returns>
         public string scan()
         {
             while (pos < scannerSource.Length)
             {
                 char ch = scannerSource[pos++];
-                string returnStr;
-                if (ch == ' '||ch == '\r'||ch == '\n') continue;
+                if (ch == ' '||ch=='\r') continue;
+                if (ch == '\n' && scannerSource[pos - 2] == '\r')
+                {
+                    line++;
+                    continue;
+                }
                 StringBuilder sb = new StringBuilder();
                 if (char.IsLetter(ch))
                 {
@@ -38,14 +76,16 @@ namespace Lexical_Analysis
                     }
                     pos--;
                     sb.Remove(sb.Length-1,1);
-                    returnStr = sb.ToString();
-                    if (Main.KeyWords.ContainsKey(returnStr))
+                    word = sb.ToString();
+                    if (Main.KeyWords.ContainsKey(word))
                     {
-                        return "(" + Main.KeyWords[returnStr] + "," + returnStr + ")";
+                        syn = Main.KeyWords[word];
+                        return "<" + syn + "," + word + ">";
                     }
                     else
                     {
-                        return "(20," + returnStr + ")";
+                        syn = 20;
+                        return "<20," + word + ">";
                     }
                 }
                 else if (char.IsDigit(ch))
@@ -59,20 +99,23 @@ namespace Lexical_Analysis
                     pos--;
 
                     sb.Remove(sb.Length - 1, 1);
-                    returnStr = sb.ToString();
-
-                    return "(" + 21 + "," + returnStr + ")";
+                    word = sb.ToString();
+                    syn = 21;
+                    return "<" + syn + "," + word + ">";
                 }                
                 else
                 {
+                    word = ch.ToString();
                     switch (ch)
                     {
-                        case '+': return "(22," + ch + ")";
-                        case '-': return "(23," + ch + ")";
-                        case '*': return "(24," + ch + ")";
+                        case '+': syn = 22; return "<22," + ch + ">";
+                        case '-': syn = 23; return "<23," + ch + ">";
+                        case '*': syn = 24; return "<24," + ch + ">";
                         case '/': 
                             if (pos < scannerSource.Length && scannerSource[pos] == '*')
                             {
+                                word="/*注释*/";
+                                syn = -1;
                                 pos++;
                                 while (pos < scannerSource.Length && scannerSource[pos] != '*')
                                 {
@@ -82,6 +125,8 @@ namespace Lexical_Analysis
                                 return "";
                             }
                             else if(pos < scannerSource.Length && scannerSource[pos] == '/'){
+                                word = "//注释";
+                                syn = -1;
                                 while (pos < scannerSource.Length && scannerSource[pos] != '\r')
                                 {
                                     pos++;
@@ -89,81 +134,102 @@ namespace Lexical_Analysis
                                 return "";
                             }else
                             {
-                                return "(25," + ch + ")";
+                                syn = 25; 
+                                return "<25," + ch + ">";
                             }
-                        case '%': return "(26," + ch + ")";
+                        case '%': syn = 26; return "<26," + ch + ">";
                         case '>':
                             if (pos < scannerSource.Length && scannerSource[pos] == '=')
                             {
-                                pos++; return "(28,>=)";
+                                word = ">=";
+                                syn = 28; 
+                                pos++; return "<28,>=>";
                             }
                             else
                             {
-                                return "(28,>)";
+                                syn = 27; 
+                                return "<27,>>";
                             }
                         case '<':
                             if (pos < scannerSource.Length && scannerSource[pos] == '=')
                             {
-                                pos++; return "(30,<=)";
+                                word = "<=";
+                                syn = 30; 
+                                pos++; return "<30,<=>";
                             }
                             else
                             {
-                                return "(29,<)";
+                                syn = 29; 
+                                return "<29,<>";
                             }
                         case '=':
                             if (pos < scannerSource.Length && scannerSource[pos] == '=')
                             {
-                                pos++; return "(32,==)";
+                                word = "==";
+                                syn = 32; 
+                                pos++; return "<32,==>";
                             }
                             else
                             {
-                                return "(31,=)";
+                                syn = 31; 
+                                return "<31,=>";
                             }
                         case '!':
                             if (pos < scannerSource.Length && scannerSource[pos] == '=')
                             {
-                                pos++; return "(33,!=)";
+                                syn = 33; 
+                                pos++; return "<33,!=>";
                             }
                             else
                             {
-                                return "(35,!)";
+                                syn = 35; 
+                                return "<35,!>";
                             }
-                        case '^': return "(34," + ch + ")";
-                        case '(': return "(36," + ch + ")";
-                        case ')': return "(37," + ch + ")";
-                        case ';': return "(38," + ch + ")";
-                        case '\"': return "(39," + ch + ")";
-                        case '\'': return "(40," + ch + ")";
-                        case '[': return "(41," + ch + ")";
-                        case ']': return "(42," + ch + ")";
-                        case '{': return "(43," + ch + ")";
-                        case '}': return "(44," + ch + ")";
-                        case '.': return "(45," + ch + ")";
-                        case '#': return "(46," + ch + ")";
-                        case ',': return "(47," + ch + ")";
+                        case '^': syn = 34; return "<34," + ch + ">";
+                        case '(': syn = 36; return "<36," + ch + ">";
+                        case ')': syn = 37; return "<37," + ch + ">";
+                        case ';': syn = 38; return "<38," + ch + ">";
+                        case '\"': syn = 39; return "<39," + ch + ">";
+                        case '\'': syn = 40; return "<40," + ch + ">";
+                        case '[': syn = 41; return "<41," + ch + ">";
+                        case ']': syn = 42; return "<42," + ch + ">";
+                        case '{': syn = 43; return "<43," + ch + ">";
+                        case '}': syn = 44; return "<44," + ch + ">";
+                        case '.': syn = 45; return "<45," + ch + ">";
+                        case '#': syn = 46; return "<46," + ch + ">";
+                        case ',': syn = 47; return "<47," + ch + ">";
                         case '&':
                             if (pos < scannerSource.Length && scannerSource[pos] == '&')
                             {
-                                pos++; return "(49,&&)";
+                                word = "&&";
+                                syn = 49; 
+                                pos++; return "<49,&&>";
                             }
                             else
                             {
-                                return "(48,&)";
+                                syn = 48; 
+                                return "<48,&>";
                             }
                         case '|':
                             if (pos < scannerSource.Length && scannerSource[pos] == '|')
                             {
-                                pos++; return "(51,||)";
+                                word = "||";
+                                syn = 51; 
+                                pos++; return "<51,||>";
                             }
                             else
                             {
-                                return "(50,|)";
+                                syn = 50; 
+                                return "<50,|>";
                             }
-                        default: return "(404," + ch + ")";
+                        default: 
+                            syn = 404; 
+                            return "<404," + ch + ">";
                     }
                 }
             } 
             return null;
         }
+    
     }
 }

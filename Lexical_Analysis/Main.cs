@@ -57,10 +57,11 @@ namespace Lexical_Analysis
             Scanner sc = new Scanner(txtBoxSource.Text);
             string str=sc.scan();
             while (str != null)
-            {
+            { 
                 if (str.Length > 1)
                 {
-                    txtBoxResult.Text += (str + "\r\n");
+                   
+                    txtBoxResult.Text +=string.Format("{0}\t{1}\r\n",sc.Line,str);
                 }
                 str = sc.scan();
             }
